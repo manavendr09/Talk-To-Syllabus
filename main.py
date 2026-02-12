@@ -371,7 +371,7 @@ def create_vector_store(documents):
     """Create a new vector store using SimpleVectorStore"""
     try:
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
+            model="models/gemini-embedding-001",
             google_api_key=GOOGLE_API_KEY
         )
 
@@ -387,7 +387,7 @@ def update_vector_store(new_documents):
     """Update the vector store with new documents"""
     try:
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
+            model="models/gemini-embedding-001",
             google_api_key=GOOGLE_API_KEY
         )
 
