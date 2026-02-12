@@ -3,7 +3,6 @@ import asyncio
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 import tempfile
 import os
@@ -13,6 +12,84 @@ import requests
 from bs4 import BeautifulSoup
 import markdown
 from urllib.parse import urlparse
+import numpy as np
+import pickle
+
+
+# =========================
+# 🔹 Simple Vector Store (No FAISS dependency)
+# =========================
+class SimpleVectorStore:
+    """A simple vector store that doesn't require FAISS - works on Python 3.13+"""
+    
+    def __init__(self, embeddings):
+        self.embeddings = embeddings
+        self.documents = []
+        self.embeddings_list = []
+    
+    def add_documents(self, documents):
+        """Add documents to the store"""
+        if not documents:
+            return
+        
+        self.documents.extend(documents)
+        
+        # Create embeddings for each document
+        texts = [doc.page_content for doc in documents]
+        new_embeddings = self.embeddings.embed_documents(texts)
+        self.embeddings_list.extend(new_embeddings)
+    
+    def similarity_search(self, query, k=2):
+        """Search for similar documents using cosine similarity"""
+        if not self.documents:
+            return []
+        
+        try:
+            # Embed the query
+            query_embedding = self.embeddings.embed_query(query)
+            
+            # Calculate cosine similarity
+            similarities = []
+            for doc_embedding in self.embeddings_list:
+                # Convert to numpy arrays
+                q = np.array(query_embedding)
+                d = np.array(doc_embedding)
+                
+                # Cosine similarity
+                norm_q = np.linalg.norm(q)
+                norm_d = np.linalg.norm(d)
+                
+                if norm_q == 0 or norm_d == 0:
+                    similarity = 0
+                else:
+                    similarity = np.dot(q, d) / (norm_q * norm_d)
+                
+                similarities.append(similarity)
+            
+            # Get top k indices
+            k = min(k, len(similarities))
+            top_indices = np.argsort(similarities)[-k:][::-1]
+            
+            # Return top k documents
+            return [self.documents[i] for i in top_indices]
+        except Exception as e:
+            print(f"Error in similarity_search: {str(e)}")
+            return []
+    
+    def __len__(self):
+        return len(self.documents)
+    
+    @property
+    def index(self):
+        """Mock index property for compatibility with existing code"""
+        class MockIndex:
+            def __init__(self, parent):
+                self.parent = parent
+            @property
+            def ntotal(self):
+                return len(self.parent)
+        
+        return MockIndex(self)
 
 
 # Initialize session state first
@@ -26,7 +103,8 @@ def initialize_session_state():
         "notion_enabled": False,
         "wiki_enabled": False,
         "show_sources": True,
-        "uploaded_content": []
+        "uploaded_content": [],
+        "wiki_url_value": ""  # For wiki URL input
     }
 
     for key, value in defaults.items():
@@ -40,9 +118,7 @@ initialize_session_state()
 # =========================
 # 🔹 API Key
 # =========================
-
-
-GOOGLE_API_KEY = "your api key"
+GOOGLE_API_KEY = "your api key"  # Replace with your actual API key or use environment variable
 
 # =========================
 # 🔹 Page Config & Styling
@@ -118,6 +194,23 @@ st.markdown("""
             background: rgba(255,255,255,0.03);
             border-radius: 10px;
             margin-bottom: 1rem;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        .stButton > button {
+            background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+            color: white !important;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 26px rgba(124,58,237,0.30);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -214,7 +307,7 @@ def process_notion_export(file):
 def process_wiki_url(url):
     """Process Wikipedia or other wiki URL - returns Document objects"""
     try:
-        headers = {'User-Agent': 'IQBot/1.0 (Educational Use)'}
+        headers = {'User-Agent': 'TalkToSyllabus/1.0 (Educational Use)'}
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
@@ -271,17 +364,19 @@ def process_wiki_url(url):
 
 
 # =========================
-# 🔹 Vector Store Functions
+# 🔹 Vector Store Functions (Uses SimpleVectorStore - No FAISS)
 # =========================
 
 def create_vector_store(documents):
+    """Create a new vector store using SimpleVectorStore"""
     try:
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
+            model="models/embedding-001",
             google_api_key=GOOGLE_API_KEY
         )
 
-        vector_store = FAISS.from_documents(documents, embeddings)
+        vector_store = SimpleVectorStore(embeddings)
+        vector_store.add_documents(documents)
         return vector_store, None
 
     except Exception as e:
@@ -289,17 +384,16 @@ def create_vector_store(documents):
 
 
 def update_vector_store(new_documents):
+    """Update the vector store with new documents"""
     try:
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
+            model="models/embedding-001",
             google_api_key=GOOGLE_API_KEY
         )
 
         if st.session_state.vector_store is None:
-            st.session_state.vector_store = FAISS.from_documents(
-                new_documents,
-                embeddings
-            )
+            st.session_state.vector_store = SimpleVectorStore(embeddings)
+            st.session_state.vector_store.add_documents(new_documents)
         else:
             st.session_state.vector_store.add_documents(new_documents)
 
@@ -310,7 +404,7 @@ def update_vector_store(new_documents):
 
 
 # =========================
-# 🔹 Answer Generation
+# 🔹 Answer Generation (Unchanged - Your exact model)
 # =========================
 def get_answer_simple(user_query, vector_store):
     """Get answer using simple approach"""
@@ -440,9 +534,17 @@ def render_sidebar():
                             st.error(f"Error: {error}")
 
         # Wiki Pages Section
-        # Wiki Pages Section
         with st.expander("🌐 Wiki Pages", expanded=False):
-            wiki_url = st.text_input("Enter Wikipedia or wiki URL:", key="wiki_url", placeholder="https://...")
+            # Use a separate session state variable for the wiki URL
+            if "wiki_url_temp" not in st.session_state:
+                st.session_state.wiki_url_temp = ""
+                
+            wiki_url = st.text_input(
+                "Enter Wikipedia or wiki URL:", 
+                key="wiki_url", 
+                placeholder="https://...",
+                value=st.session_state.wiki_url_temp
+            )
 
             col1, col2 = st.columns([3, 1])
             with col2:
@@ -466,8 +568,8 @@ def render_sidebar():
                                     'url': wiki_url
                                 })
                                 st.success(f"✅ {page_name} processed!")
-                                # Instead of modifying st.session_state.wiki_url directly,
-                                # use a query param or just don't clear it
+                                # Clear the input
+                                st.session_state.wiki_url_temp = ""
                                 st.rerun()
                             else:
                                 st.error(f"Vector store error: {vector_error}")
@@ -497,7 +599,7 @@ def render_sidebar():
 
             # Vector store info
             if st.session_state.vector_store:
-                st.markdown(f"*Total vectors: {st.session_state.vector_store.index.ntotal}*")
+                st.markdown(f"*Total vectors: {len(st.session_state.vector_store)}*")
 
         # Control Buttons
         st.markdown("---")
@@ -524,8 +626,7 @@ def main():
     # Header
     st.markdown("""
         <div class="main-header">
-            <h1 class="gradient-text" style="background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
-                   -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem;">
+            <h1 class="gradient-text" style="font-size: 2.5rem;">
                 📘 Talk To Syllabus - An Intelligent Q&A Assistant
             </h1>
             <p style="color: #e2e8f0; font-size: 1.1rem;">
@@ -612,7 +713,7 @@ def main():
         with col2:
             st.markdown("""
                 <div style="text-align: center; padding: 3rem 1rem; background: rgba(255,255,255,0.03); border-radius: 15px;">
-                    <h2 style="color: #e2e8f0;">👋 Welcome to IQBot!</h2>
+                    <h2 style="color: #e2e8f0;">👋 Welcome to Talk To Syllabus!</h2>
                     <p style="color: #94a3b8; font-size: 1.1rem; margin: 1.5rem 0;">
                         Get started by uploading your content using the sidebar.
                     </p>
