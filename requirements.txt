@@ -9,4 +9,3 @@ python-dotenv==1.0.0
 requests==2.31.0
 beautifulsoup4==4.12.2
 markdown==3.5.1
-numpy==1.24.3
