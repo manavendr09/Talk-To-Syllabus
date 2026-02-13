@@ -14,6 +14,25 @@ import markdown
 from urllib.parse import urlparse
 import numpy as np
 import pickle
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access the API key
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Verify it loaded correctly
+if GOOGLE_API_KEY:
+    print("API key loaded successfully!")
+else:
+    print("Warning: GOOGLE_API_KEY not found in .env file")
+
+# Use the API key in your code
+# Example:
+# client = SomeGoogleClient(api_key=GOOGLE_API_KEY)
+
 
 
 # =========================
