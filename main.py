@@ -137,7 +137,7 @@ initialize_session_state()
 # =========================
 # 🔹 API Key
 # =========================
-GOOGLE_API_KEY = "your api key"  # Replace with your actual API key or use environment variable
+GOOGLE_API_KEY = "AIzaSyAt6iUnXAF4bnEsxOeI6wlxDmJBBkqpkVY"  # Replace with your actual API key or use environment variable
 
 # =========================
 # 🔹 Page Config & Styling
