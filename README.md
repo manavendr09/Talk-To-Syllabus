@@ -208,6 +208,19 @@ talk-to-syllabus/
     └── vector_store      # Embedded document vectors
 ```
 
+## Screenshots
+
+<img width="1861" height="876" alt="Screenshot 2026-02-16 191529" src="https://github.com/user-attachments/assets/d6331ee3-d221-453c-a57d-ed71417fac47" />
+</br>
+<img width="1341" height="622" alt="Screenshot 2026-02-16 191745" src="https://github.com/user-attachments/assets/e3dfd56c-9e0e-48e8-80a2-66b68d466132" />
+</br>
+<img width="1350" height="449" alt="Screenshot 2026-02-16 191544" src="https://github.com/user-attachments/assets/aa54674b-a885-439f-a483-10ae0cb20897" />
+</br>
+<img width="1341" height="622" alt="Screenshot 2026-02-16 191745" src="https://github.com/user-attachments/assets/06249a85-b12d-4529-a7aa-0d71d45a12ad" />
+
+
+
+
 ## 🔒 Security Notes
 
 - **Never commit your `.env` file** - it contains your API key
