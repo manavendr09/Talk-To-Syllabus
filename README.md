@@ -211,6 +211,9 @@ talk-to-syllabus/
 ## Screenshots
 
 <img width="1861" height="876" alt="Screenshot 2026-02-16 191529" src="https://github.com/user-attachments/assets/d6331ee3-d221-453c-a57d-ed71417fac47" />
+<br>
+<img width="1320" height="658" alt="Screenshot 2026-02-16 191718" src="https://github.com/user-attachments/assets/45b06c67-2340-49f8-813f-623d1c340e44" />
+
 </br>
 <img width="1341" height="622" alt="Screenshot 2026-02-16 191745" src="https://github.com/user-attachments/assets/e3dfd56c-9e0e-48e8-80a2-66b68d466132" />
 </br>
